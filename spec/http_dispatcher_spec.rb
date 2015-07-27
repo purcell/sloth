@@ -22,8 +22,8 @@ RSpec.describe HTTPDispatcher do
       expect(handler).to receive(:handle).with(:get, path).and_return([200, handler_response])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
-                                                      "Content-Type: text/plain"],
-                                                      handler_response.string))
+                                                        "Content-Type: text/plain"],
+                                                       handler_response.string))
     end
   end
 
@@ -33,8 +33,8 @@ RSpec.describe HTTPDispatcher do
       expect(handler).to receive(:handle).with(:post, path).and_return([200, handler_response])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
-                                                      "Content-Type: text/plain"],
-                                                      handler_response.string))
+                                                        "Content-Type: text/plain"],
+                                                       handler_response.string))
     end
   end
 
@@ -59,8 +59,8 @@ RSpec.describe HTTPDispatcher do
       expect(handler).to receive(:handle).with(:get, path).and_return([200, "Some response"])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
-                                                      "Content-Type: text/plain"],
-                                                      "Some response"))
+                                                        "Content-Type: text/plain"],
+                                                       "Some response"))
     end
   end
 
@@ -69,8 +69,8 @@ RSpec.describe HTTPDispatcher do
       expect(handler).to receive(:handle).with(:get, path).and_raise(StandardError)
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 500 Internal Server Error",
-                                                      "Content-Type: text/plain"],
-                                                      "Internal Server Error"))
+                                                        "Content-Type: text/plain"],
+                                                       "Internal Server Error"))
     end
   end
 
@@ -85,16 +85,16 @@ RSpec.describe HTTPDispatcher do
   context "with extra request headers" do
     let(:request) do
       with_header(["GET /foo HTTP/1.0",
-                 "Accept-Encoding: text/plain",
-                 "X-Some-Other: blah"])
+                   "Accept-Encoding: text/plain",
+                   "X-Some-Other: blah"])
     end
 
     it "ignores the headers" do
       expect(handler).to receive(:handle).with(:get, "foo").and_return([200, "Some response"])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
-                                                      "Content-Type: text/plain"],
-                                                      "Some response"))
+                                                        "Content-Type: text/plain"],
+                                                       "Some response"))
     end
   end
 
