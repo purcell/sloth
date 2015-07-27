@@ -1,5 +1,6 @@
 require_relative "../lib/http_dispatcher"
 require 'stringio'
+require 'zlib'
 
 RSpec.describe HTTPDispatcher do
 
@@ -135,6 +136,26 @@ RSpec.describe HTTPDispatcher do
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
                                                         "X-Magic: Abracadabra"],
                                                        "Some response"))
+    end
+  end
+
+  context "when the client accepts gzip encoding" do
+    let(:request) { with_header([
+                                  "#{method} /#{path} HTTP/1.0",
+                                  "Accept-Encoding: gzip"
+                                ]) }
+
+    it "compresses text/* responses" do
+      uncompressed_response = ("Some response" * 100).force_encoding(Encoding::ASCII_8BIT)
+      compressed_response = Zlib.deflate(uncompressed_response)
+      expect(handler).to receive(:handle).with(:get, path).and_return(
+                           [200, uncompressed_response, { "Content-Type" => "text/blahblah" }])
+      dispatcher.run(request_stream, response_stream)
+      expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
+                                                        "Content-Type: text/blahblah",
+                                                        "Content-Encoding: gzip",
+                                                        "Content-Length: #{compressed_response.bytesize}"],
+                                                       compressed_response))
     end
   end
 end
