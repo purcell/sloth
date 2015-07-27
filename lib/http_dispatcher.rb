@@ -8,12 +8,14 @@ class HTTPDispatcher
     500 => "Internal Server Error"
   }
 
-  def initialize(handler, log=STDERR)
+  def initialize(handler, access_log=STDOUT, error_log=STDERR)
     @handler = handler
-    @log = log
+    @access_log = access_log
+    @error_log = error_log
   end
 
   def run(request_stream, response_stream)
+    path = method = "-"
     status, data, headers = if request = read_request(request_stream)
                               method, path = request
                               begin
@@ -35,6 +37,7 @@ class HTTPDispatcher
     if data
       response_stream.write(data.respond_to?(:read) ? data.read : data.to_s)
     end
+    @access_log.puts("#{method} #{path} #{status}")
   end
 
   private
@@ -42,7 +45,7 @@ class HTTPDispatcher
   LINE_SEP = "\r\n"
 
   def log_error(e)
-    @log.puts("Error: #{e}")
+    @error_log.puts("Error: #{e}")
   end
 
   def read_request(request_stream)

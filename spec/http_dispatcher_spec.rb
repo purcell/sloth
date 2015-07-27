@@ -7,11 +7,12 @@ RSpec.describe HTTPDispatcher do
   let(:path) { "path" + rand(1..1000).to_s }
   let(:method) { "GET" }
   let(:request) { with_header(["#{method} /#{path} HTTP/1.0"]) }
+  let(:access_log) { StringIO.new }
   let(:error_log) { StringIO.new }
   let(:response_stream) { StringIO.new }
   let(:request_stream) { StringIO.new(request) }
   let(:handler_response) { StringIO.new("response" + rand.to_s) }
-  subject(:dispatcher) { HTTPDispatcher.new(handler, error_log) }
+  subject(:dispatcher) { HTTPDispatcher.new(handler, access_log, error_log) }
 
   TEXT_PLAIN_HEADERS = { "Content-Type" => 'text/plain' }
 
@@ -20,12 +21,19 @@ RSpec.describe HTTPDispatcher do
   end
 
   context "with a valid request" do
-    it "calls the handler and writes its stream contents to the response" do
+    before do
       expect(handler).to receive(:handle).with(:get, path).and_return([200, handler_response, TEXT_PLAIN_HEADERS])
       dispatcher.run(request_stream, response_stream)
+    end
+
+    it "calls the handler and writes its stream contents to the response" do
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
                                                         "Content-Type: text/plain"],
                                                        handler_response.string))
+    end
+
+    it "logs the request" do
+      expect(access_log.string).to eq("GET #{path} 200\n")
     end
   end
 
