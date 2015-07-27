@@ -30,9 +30,11 @@ dispatcher = HTTPDispatcher.new(handler)
 
 server = TCPServer.new(options[:port])
 loop do
-  # TODO: threads or fork
   Thread.start(server.accept) do |client|
-    dispatcher.run(client, client)
-    client.close
+    begin
+      dispatcher.run(client, client)
+    ensure
+      client.close
+    end
   end
 end
