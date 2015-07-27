@@ -13,13 +13,15 @@ RSpec.describe HTTPDispatcher do
   let(:handler_response) { StringIO.new("response" + rand.to_s) }
   subject(:dispatcher) { HTTPDispatcher.new(handler, error_log) }
 
+  TEXT_PLAIN_HEADERS = { "Content-Type" => 'text/plain' }
+
   def with_header(headers, body="")
     (headers + ["", body]).join("\r\n")
   end
 
   context "with a valid request" do
     it "calls the handler and writes its stream contents to the response" do
-      expect(handler).to receive(:handle).with(:get, path).and_return([200, handler_response])
+      expect(handler).to receive(:handle).with(:get, path).and_return([200, handler_response, TEXT_PLAIN_HEADERS])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
                                                         "Content-Type: text/plain"],
@@ -30,7 +32,7 @@ RSpec.describe HTTPDispatcher do
   context "with a different request method" do
     let(:method) { "POST" }
     it "calls the handler and writes its stream contents to the response" do
-      expect(handler).to receive(:handle).with(:post, path).and_return([200, handler_response])
+      expect(handler).to receive(:handle).with(:post, path).and_return([200, handler_response, TEXT_PLAIN_HEADERS])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
                                                         "Content-Type: text/plain"],
@@ -56,7 +58,7 @@ RSpec.describe HTTPDispatcher do
 
   context "with a string response body from the handler" do
     it "responds with that body" do
-      expect(handler).to receive(:handle).with(:get, path).and_return([200, "Some response"])
+      expect(handler).to receive(:handle).with(:get, path).and_return([200, "Some response", TEXT_PLAIN_HEADERS])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
                                                         "Content-Type: text/plain"],
@@ -90,7 +92,7 @@ RSpec.describe HTTPDispatcher do
     end
 
     it "ignores the headers" do
-      expect(handler).to receive(:handle).with(:get, "foo").and_return([200, "Some response"])
+      expect(handler).to receive(:handle).with(:get, "foo").and_return([200, "Some response", TEXT_PLAIN_HEADERS])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
                                                         "Content-Type: text/plain"],
@@ -123,8 +125,7 @@ RSpec.describe HTTPDispatcher do
       expect(handler).to receive(:handle).with(:get, path).and_return([200, "Some response", { "X-Magic" => "Abracadabra" }])
       dispatcher.run(request_stream, response_stream)
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
-                                                        "X-Magic: Abracadabra",
-                                                        "Content-Type: text/plain"],
+                                                        "X-Magic: Abracadabra"],
                                                        "Some response"))
     end
   end

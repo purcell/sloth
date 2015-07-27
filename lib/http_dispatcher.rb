@@ -20,7 +20,7 @@ class HTTPDispatcher
                                 @handler.handle(method.downcase.to_sym, path)
                               rescue StandardError => e
                                 log_error(e)
-                                [500, STATUS_CODES[500]]
+                                [500, STATUS_CODES[500], { "Content-Type" => "text/plain" }]
                               end
                             else
                               [400, nil]
