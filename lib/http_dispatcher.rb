@@ -45,7 +45,7 @@ class HTTPDispatcher
   LINE_SEP = "\r\n"
 
   def log_error(e)
-    @error_log.puts("Error: #{e}")
+    @error_log.puts("Error: #{e}: #{e.backtrace.join("\n")}")
   end
 
   def read_request(request_stream)
