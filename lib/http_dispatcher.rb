@@ -1,28 +1,62 @@
 class HTTPDispatcher
 
-  STATUS_CODES = { 200 => "OK", 404 => "Not Found", 405 => "Method Not Allowed", 500 => "Internal Server Error" }
+  STATUS_CODES = {
+    200 => "OK",
+    400 => "Bad Request",
+    404 => "Not Found",
+    405 => "Method Not Allowed",
+    500 => "Internal Server Error"
+  }
 
-  def initialize(handler)
+  def initialize(handler, log=STDERR)
     @handler = handler
+    @log = log
   end
 
   def run(request_stream, response_stream)
-    request_stream.read =~ /\A([A-Z]+) \/([^ ]+) HTTP\/1\.0\n/
-    path = $2
-    method = $1
-    status, data = begin
-                     @handler.handle(method.downcase.to_sym, path)
-                   rescue StandardError
-                     [500, STATUS_CODES[500]]
+    status, data = if request = read_request(request_stream)
+                     method, path = request
+                     begin
+                       @handler.handle(method.downcase.to_sym, path)
+                     rescue StandardError => e
+                       log_error(e)
+                       [500, STATUS_CODES[500]]
+                     end
+                   else
+                     [400, nil]
                    end
 
     status_description = STATUS_CODES[status]
-    response_stream.write("HTTP/1.0 #{status} #{status_description}\n")
+    response_stream.write("HTTP/1.0 #{status} #{status_description}#{LINE_SEP}")
     if data
-      response_stream.write("Content-Type: text/plain\n\n")
+      response_stream.write("Content-Type: text/plain#{LINE_SEP}#{LINE_SEP}")
       response_stream.write(data.respond_to?(:read) ? data.read : data.to_s)
     else
-      response_stream.write("\n")
+      response_stream.write(LINE_SEP)
+    end
+  end
+
+  private
+
+  LINE_SEP = "\r\n"
+
+  def log_error(e)
+    @log.puts("Error: #{e}")
+  end
+
+  def read_request(request_stream)
+    begin
+      request_line = request_stream.readline(LINE_SEP)
+      if request_line =~ /\A([A-Z]+) \/([^ ]*) HTTP\/1\.[01]#{LINE_SEP}/
+        path = $2
+        method = $1
+        while (nextline = request_stream.readline(LINE_SEP)) != LINE_SEP
+          # skip header
+        end
+        [method, path]
+      end
+    rescue IOError => e
+      log_error(e)
     end
   end
 end

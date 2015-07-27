@@ -33,4 +33,18 @@ RSpec.describe DirectoryHandler do
       expect(handler.handle(:post, "example.txt")).to eq([405, nil])
     end
   end
+
+  context "when requesting a directory with no index.html" do
+    it "returns a 404" do
+      expect(handler.handle(:get, "")).to eq([404, nil])
+    end
+  end
+
+  context "when requesting a directory with an index.html" do
+    it "returns a 200 and that index file" do
+      status, stream = handler.handle(:get, "subdir")
+      expect(status).to eq(200)
+      expect(stream.read).to eq(File.read(File.join(base_dir, "subdir", "index.html")))
+    end
+  end
 end

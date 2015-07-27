@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+require_relative "../lib/http_dispatcher"
+require_relative "../lib/directory_handler"
+require 'socket'
+require 'optparse'
+
+options = { port: 8081 }
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [options] base_dir"
+  opts.separator ""
+  opts.separator "Options:"
+  opts.on("--port=N", Integer, "Listen on this port (default: #{options[:port]})") do |n|
+    options[:port] = n
+  end
+  opts.on_tail("-h", "--help", "Print this help") do
+    puts opts
+    exit 0
+  end
+end
+optparse.parse!(ARGV)
+unless ARGV.size == 1
+  puts optparse
+  exit 1
+end
+
+
+base_dir = ARGV.first
+handler = DirectoryHandler.new(base_dir)
+dispatcher = HTTPDispatcher.new(handler)
+
+server = TCPServer.new(options[:port])
+loop do
+  # TODO: threads or fork
+  client = server.accept
+  dispatcher.run(client, client)
+  client.close
+end
