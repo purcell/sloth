@@ -1,4 +1,5 @@
 require_relative 'mime_types'
+require 'cgi'
 
 class DirectoryHandler
 
@@ -21,7 +22,8 @@ class DirectoryHandler
     end
     headers = {
       "Content-Type" => MimeTypes.from_filename(filepath),
-      "Content-Length" => File.size(filepath)
+      "Content-Length" => File.size(filepath),
+      "Last-Modified" => CGI::rfc1123_date(File.stat(filepath).mtime)
     }
     [200, File.open(filepath), headers]
   end
