@@ -1,6 +1,4 @@
 ### TODO
 
-- Fork
+- require trailing '/' for directory indexes
 - Logging
-- MIME types
-- directory indexes (index.html)

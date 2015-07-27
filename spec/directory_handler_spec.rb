@@ -8,9 +8,19 @@ RSpec.describe DirectoryHandler do
 
   context "when requesting a file which exists" do
     it "returns a stream to the file contents" do
-      status, stream = handler.handle(:get, "example.txt")
+      status, stream, headers = handler.handle(:get, "example.txt")
       expect(status).to eq(200)
+      expect(headers).to eq({ "Content-Type" => "text/plain" })
       expect(stream.read).to eq(File.read(File.join(base_dir, "example.txt")))
+    end
+  end
+
+  context "when requesting a file with an unknown mime type exists" do
+    it "returns a default mime type" do
+      status, stream, headers = handler.handle(:get, "blabla")
+      expect(status).to eq(200)
+      expect(headers).to eq({ "Content-Type" => "binary/octet-stream" })
+      expect(stream.read).to eq(File.read(File.join(base_dir, "blabla")))
     end
   end
 
@@ -42,8 +52,9 @@ RSpec.describe DirectoryHandler do
 
   context "when requesting a directory with an index.html" do
     it "returns a 200 and that index file" do
-      status, stream = handler.handle(:get, "subdir")
+      status, stream, headers = handler.handle(:get, "subdir")
       expect(status).to eq(200)
+      expect(headers).to eq({ "Content-Type" => "text/html" })
       expect(stream.read).to eq(File.read(File.join(base_dir, "subdir", "index.html")))
     end
   end

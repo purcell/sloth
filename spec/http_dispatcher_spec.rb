@@ -117,4 +117,15 @@ RSpec.describe HTTPDispatcher do
       expect(response_stream.string).to eq(with_header(["HTTP/1.0 400 Bad Request"]))
     end
   end
+
+  context "when the handler returns extra headers" do
+    it "writes those headers to the response" do
+      expect(handler).to receive(:handle).with(:get, path).and_return([200, "Some response", { "X-Magic" => "Abracadabra" }])
+      dispatcher.run(request_stream, response_stream)
+      expect(response_stream.string).to eq(with_header(["HTTP/1.0 200 OK",
+                                                        "X-Magic: Abracadabra",
+                                                        "Content-Type: text/plain"],
+                                                       "Some response"))
+    end
+  end
 end

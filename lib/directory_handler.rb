@@ -1,4 +1,7 @@
+require_relative 'mime_types'
+
 class DirectoryHandler
+
   def initialize(base_dir)
     @base_dir = base_dir
   end
@@ -16,6 +19,10 @@ class DirectoryHandler
         return [404, nil]
       end
     end
-    [200, File.open(filepath)]
+    headers = {
+      "Content-Type" => MimeTypes.from_filename(filepath),
+      "Content-Length" => File.size(filepath)
+    }
+    [200, File.open(filepath), headers]
   end
 end

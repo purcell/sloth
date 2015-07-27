@@ -14,25 +14,26 @@ class HTTPDispatcher
   end
 
   def run(request_stream, response_stream)
-    status, data = if request = read_request(request_stream)
-                     method, path = request
-                     begin
-                       @handler.handle(method.downcase.to_sym, path)
-                     rescue StandardError => e
-                       log_error(e)
-                       [500, STATUS_CODES[500]]
-                     end
-                   else
-                     [400, nil]
-                   end
+    status, data, headers = if request = read_request(request_stream)
+                              method, path = request
+                              begin
+                                @handler.handle(method.downcase.to_sym, path)
+                              rescue StandardError => e
+                                log_error(e)
+                                [500, STATUS_CODES[500]]
+                              end
+                            else
+                              [400, nil]
+                            end
 
     status_description = STATUS_CODES[status]
     response_stream.write("HTTP/1.0 #{status} #{status_description}#{LINE_SEP}")
+    (headers || {}).each do |key, value|
+      response_stream.write("#{key}: #{value}#{LINE_SEP}")
+    end
+    response_stream.write(LINE_SEP)
     if data
-      response_stream.write("Content-Type: text/plain#{LINE_SEP}#{LINE_SEP}")
       response_stream.write(data.respond_to?(:read) ? data.read : data.to_s)
-    else
-      response_stream.write(LINE_SEP)
     end
   end
 
